@@ -17,7 +17,7 @@
 use std::str::FromStr;
 use std::path::PathBuf;
 use crate::{Lines, ParsingArgs, escape_control_chars};
-use bril_rs::{AbstractProgram, AbstractFunction, AbstractArgument, AbstractCode, AbstractInstruction, ConstOps, AbstractType, Literal, Import, ImportedFunction};
+use bril_rs::*;
 
 grammar(lines : &Lines);
 
@@ -35,12 +35,19 @@ match {
 }
 
 pub AbstractProgram : AbstractProgram = {
+    #[cfg(feature = "extended")]
     <i: (<Imports>)*> <f :(<AbstractFunction>)*> => AbstractProgram {
         imports: i,
         functions : f,
     }
+    #[not(cfg(feature = "extended"))]
+    <f :(<AbstractFunction>)*> => AbstractProgram {
+        imports: Vec::new(),
+        functions : f,
+    }
 }
 
+#[cfg(feature = "extended")]
 Imports : Import = {
     "from" <p: Path> "import" <n:Comma<ImportedFunction>> ";" => {
         Import {
@@ -50,6 +57,7 @@ Imports : Import = {
     }
 }
 
+#[cfg(feature = "extended")]
 ImportedFunction : ImportedFunction = {
     <n:Func> <a:Alias?> => {
         ImportedFunction {
@@ -71,6 +79,7 @@ AbstractFunction : AbstractFunction = {
         args : a,
         return_type : t,
         instrs: c,
+        #[cfg(feature = "extended")]
         pos : lines.get_position(loc, loc2),
     }}
 }
@@ -91,7 +100,11 @@ AbstractArgument : AbstractArgument = {
 }
 
 AbstractCode : AbstractCode = {
-    <loc:@L> <l: Label> ":" <loc2:@R> => AbstractCode::Label{ label : l, pos : lines.get_position(loc, loc2)},
+    <loc:@L> <l: Label> ":" <loc2:@R> => AbstractCode::Label{
+      label : l,
+      #[cfg(feature = "extended")]
+      pos : lines.get_position(loc, loc2)
+    },
     <i: AbstractInstruction> => AbstractCode::Instruction(i),
 }
 
@@ -101,6 +114,7 @@ AbstractInstruction : AbstractInstruction = {
         dest : i,
         const_type : t,
         value : l,
+        #[cfg(feature = "extended")]
         pos : lines.get_position(loc, loc2),
     },
     <loc:@L> <i:Ident> <t:(":" <AbstractType>)?> "=" <v:Ident> <f :(<Args>)*> ";" <loc2:@R> => {
@@ -121,6 +135,7 @@ AbstractInstruction : AbstractInstruction = {
             args: a_vec,
             funcs: f_vec,
             labels: l_vec,
+            #[cfg(feature = "extended")]
             pos : lines.get_position(loc, loc2),
         }
     },
@@ -140,6 +155,7 @@ AbstractInstruction : AbstractInstruction = {
             args: a_vec,
             funcs: f_vec,
             labels: l_vec,
+            #[cfg(feature = "extended")]
             pos : lines.get_position(loc, loc2),
         }
     }
@@ -185,7 +201,9 @@ Label: String = {
 Literal: Literal = {
     <n: Num> => Literal::Int(n),
     <b: Bool> => Literal::Bool(b),
+    #[cfg(feature = "extended")]
     <f: Float> => Literal::Float(f),
+    #[cfg(feature = "extended")]
     <c: Char> => Literal::Char(c),
 }
 

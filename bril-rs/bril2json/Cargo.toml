@@ -25,4 +25,8 @@ lalrpop = "0.22"
 [dependencies.bril-rs]
 version = "0.1.0"
 path = "../../bril-rs"
-features = ["ssa", "memory", "float", "speculate", "position", "import", "char"]
+features = []
+default-features = false
+
+[features]
+extended = ["bril-rs/ssa", "bril-rs/memory", "bril-rs/float", "bril-rs/speculate", "bril-rs/position", "bril-rs/import", "bril-rs/char"]
